@@ -71,7 +71,7 @@ Place your research papers in the `data/` directory. Some suggested PDFs:
 Run the following to ingest and embed documents:
 
 ```bash
-python ingest_documents.py
+python create_database.py
 ```
 
 ---
@@ -105,7 +105,7 @@ Access the app in your browser and type in any question!
 ├── app.py                # Streamlit UI
 ├── cli.py                # Command-line interface
 ├── rag_pipeline.py       # Builds the RAG chain
-├── ingest_documents.py   # Loads & embeds PDF documents
+├── create_database.py   # Loads & embeds PDF documents
 ├── utils.py              # .env loader
 ├── data/                 # Store PDFs here
 ├── faiss_index/          # FAISS vector store (auto-generated)
