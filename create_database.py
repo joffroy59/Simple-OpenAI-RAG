@@ -1,10 +1,13 @@
 from langchain.document_loaders import UnstructuredPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
+from dotenv import load_dotenv
 from langchain.vectorstores import FAISS
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
+load_dotenv()
 DATA_FOLDER = "data"
+
 def load_and_split(pdf_path):
     loader = UnstructuredPDFLoader(pdf_path)
     documents = loader.load()
@@ -12,7 +15,7 @@ def load_and_split(pdf_path):
         chunk_size=500,
         chunk_overlap=100
     )
-    chunks = splitter.split(documents)
+    chunks = splitter.split_documents(documents)
     return chunks
 
 def build_vectorstore(chunks):

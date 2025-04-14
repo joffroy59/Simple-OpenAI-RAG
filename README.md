@@ -1,19 +1,21 @@
 # 🧠 Ask Me Anything: OpenAI Research RAG
 
 A **Retrieval-Augmented Generation (RAG)** system built with **LangChain** and **OpenAI**, allowing users to ask natural language questions grounded in OpenAI's latest research papers.
-Do note that you can adjust the RAG context by changing the PDFs fed into the `data` folder
 
-This project demonstrates how to build a simple, modular, and powerful RAG pipeline, from document ingestion to retrieval to LLM-based answering, and is suitable for publishing or extending in production systems.
+You can easily adjust the knowledge base by modifying the PDFs placed in the `data/` folder — making the context fully customizable and domain-adaptable.
+
+This project demonstrates how to build a modular and powerful RAG pipeline, from document ingestion to semantic retrieval and LLM-based answering. It’s suitable for educational purposes, rapid prototyping, or production-ready extensions.
 
 ---
 
 ## 📌 Features
 
-- 🔍 Semantic document search using vector embeddings (FAISS)
-- 🧾 PDF ingestion & chunking using LangChain
-- 🧠 GPT-3.5 powered question answering with document-grounded answers
-- 🧪 Query via CLI or a Streamlit web UI
+- 🔍 Semantic search over embedded PDF content using FAISS
+- 🧾 Robust document ingestion & chunking via LangChain + Unstructured
+- 🧠 GPT-3.5-powered answers grounded in real documents
+- 🧪 Interact through CLI or Streamlit Web UI
 - 📚 Preloaded with OpenAI research papers (GPT-4, Whisper, DALL·E 3, etc.)
+- ⚡ Optional: swap OpenAI embeddings with HuggingFace to avoid rate limits
 
 ---
 
@@ -23,8 +25,9 @@ This project demonstrates how to build a simple, modular, and powerful RAG pipel
 - [OpenAI API](https://platform.openai.com/)
 - [FAISS](https://github.com/facebookresearch/faiss)
 - [Streamlit](https://streamlit.io/)
+- [Unstructured](https://github.com/Unstructured-IO/unstructured)
+- [Hugging Face Embeddings](https://www.sbert.net/)
 - [Python-dotenv](https://pypi.org/project/python-dotenv/)
-- [Unstructured](https://github.com/Unstructured-IO/unstructured) for PDF parsing
 
 ---
 
@@ -41,13 +44,13 @@ cd openai-rag-system
 
 ```bash
 python -m venv venv
-source venv/bin/activate   # On Windows: venv\\Scripts\\activate
+source venv/bin/activate  # On Windows: venv\\Scripts\\activate
 pip install -r requirements.txt
 ```
 
 ### 3. Set your OpenAI API key
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory with:
 
 ```
 OPENAI_API_KEY=your_openai_api_key_here
@@ -59,7 +62,8 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ## 📥 Add PDF Files
 
-Place your research papers in the `data/` directory. Some suggested PDFs:
+Place research papers in the `data/` folder. For example:
+
 - [GPT-4 Technical Report](https://cdn.openai.com/papers/gpt-4.pdf)
 - [Whisper](https://cdn.openai.com/papers/whisper.pdf)
 - [DALL·E 3](https://cdn.openai.com/papers/dall-e-3.pdf)
@@ -68,17 +72,23 @@ Place your research papers in the `data/` directory. Some suggested PDFs:
 
 ## ⚙️ Build the Vector Store
 
-Run the following to ingest and embed documents:
+Run the following to ingest documents and build the FAISS index:
 
 ```bash
 python create_database.py
 ```
 
+> 🛑 **Out of OpenAI quota?** You can switch to local embeddings by editing `create_database.py`:
+> ```python
+> from langchain_community.embeddings import HuggingFaceEmbeddings
+> embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+> ```
+
 ---
 
-## 💬 Ask Questions (Two Options)
+## 💬 Ask Questions (Two Interfaces)
 
-### Option 1: CLI
+### ▶️ Option 1: Command Line Interface (CLI)
 
 ```bash
 python cli.py
@@ -89,27 +99,29 @@ Example:
 Ask a question (or type 'exit' to quit): What are the main improvements in GPT-4?
 ```
 
-### Option 2: Streamlit Web App
+---
+
+### 🌐 Option 2: Streamlit Web App
 
 ```bash
 streamlit run app.py
 ```
 
-Access the app in your browser and type in any question!
+Open your browser to `http://localhost:8501` and start querying!
 
 ---
 
 ## 📦 Project Structure
 
 ```
-├── app.py                # Streamlit UI
-├── cli.py                # Command-line interface
+├── app.py                # Streamlit interface
+├── cli.py                # CLI interface
+├── create_database.py    # Ingest and embed documents
 ├── rag_pipeline.py       # Builds the RAG chain
-├── create_database.py   # Loads & embeds PDF documents
-├── utils.py              # .env loader
-├── data/                 # Store PDFs here
-├── faiss_index/          # FAISS vector store (auto-generated)
-├── .env
+├── utils.py              # Environment variable loader
+├── data/                 # Place PDFs here
+├── faiss_index/          # Generated FAISS vector index
+├── .env                  # API key (not committed)
 └── requirements.txt
 ```
 
@@ -117,16 +129,17 @@ Access the app in your browser and type in any question!
 
 ## ✅ To Do / Extensions
 
-- Add citations to source documents
-- Support user-uploaded PDFs
-- Switch to async embedding or GPU
-- Deploy via Docker / Streamlit Cloud
+- 🔗 Add citations to returned answers
+- 📤 Allow file uploads via Streamlit
+- ⚡ Add async support or GPU acceleration
+- 🐳 Dockerize for easy deployment
+- 📈 Add feedback logging and user analytics
 
 ---
 
 ## 📜 License
 
-MIT License. Feel free to use and modify this project.
+MIT License. Free to use, share, and extend.
 
 ---
 

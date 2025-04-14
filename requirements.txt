@@ -1,8 +1,11 @@
 langchain
+langchain-openai
+langchain-community
 openai
 chromadb
 tiktoken
-unstructured
+unstructured[pdf]
 faiss-cpu
 python-dotenv
 streamlit
+sentence-transformers
