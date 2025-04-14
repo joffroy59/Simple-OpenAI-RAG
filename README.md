@@ -1,8 +1,9 @@
 # 🧠 Ask Me Anything: OpenAI Research RAG
 
 A **Retrieval-Augmented Generation (RAG)** system built with **LangChain** and **OpenAI**, allowing users to ask natural language questions grounded in OpenAI's latest research papers.
+Do note that you can adjust the RAG context by changing the PDFs fed into the `data` folder
 
-This project demonstrates how to build a simple, modular, and powerful RAG pipeline — from document ingestion to retrieval to LLM-based answering — and is suitable for publishing or extending in production systems.
+This project demonstrates how to build a simple, modular, and powerful RAG pipeline, from document ingestion to retrieval to LLM-based answering, and is suitable for publishing or extending in production systems.
 
 ---
 
