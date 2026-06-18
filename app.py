@@ -194,6 +194,8 @@ if query:
             qa_chain = create_rag_chain()
             response = qa_chain({"query": query})
             st.write("**Answer:**", response["result"])
+            if response.get("exhaustive_mode"):
+                st.caption("Exhaustive list mode enabled: second-pass verification was applied.")
 
             source_documents = response.get("source_documents", [])
             source_files = _extract_source_files(source_documents)

@@ -110,6 +110,23 @@ RAG_RETRIEVER_FETCH_K=40
 
 You can increase `RAG_RETRIEVER_K` (for example to `16` or `20`) for more exhaustive answers.
 
+#### Exhaustive List Mode (automatic second pass)
+
+For list-style queries, you can enable an automatic verification pass with broader retrieval:
+
+```
+RAG_EXHAUSTIVE_MODE=true
+RAG_EXHAUSTIVE_KEYWORDS=liste,tous,complete,capitaines
+RAG_EXHAUSTIVE_RETRIEVER_K=20
+RAG_EXHAUSTIVE_RETRIEVER_FETCH_K=80
+```
+
+When the question contains one of these keywords, the app runs:
+
+- First pass: normal retrieval
+- Second pass: complementary retrieval with larger coverage
+- Final synthesis: validated answer built from both passes
+
 > If you change embedding provider or embedding model, rebuild the FAISS index by running `python create_database.py` again.
 
 > 💡 Don’t forget to add `.env` to your `.gitignore`.
