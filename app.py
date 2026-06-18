@@ -32,6 +32,10 @@ def _resolve_embedding_identity():
 
 def _render_rag_api_panel():
     provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    api_host = os.getenv("RAG_API_HOST", "localhost")
+    api_port = os.getenv("RAG_API_PORT", "8000")
+    api_base_url = f"http://{api_host}:{api_port}"
+
     runtime = {
         "provider": provider,
         "llm": _resolve_llm_identity(),
@@ -39,6 +43,7 @@ def _render_rag_api_panel():
         "retriever_k": 4,
         "vector_store": "FAISS",
         "index_path": "faiss_index",
+        "fastapi_base_url": api_base_url,
     }
 
     request_contract = {
@@ -58,6 +63,18 @@ def _render_rag_api_panel():
     }
 
     with st.expander("RAG API exposed by this app", expanded=False):
+        st.write("**FastAPI exposure**")
+        st.code(
+            "uvicorn openai_compatible_api:app --host 0.0.0.0 --port 8000",
+            language="bash",
+        )
+        st.write("**Base URL:**", api_base_url)
+        st.write("**FastAPI endpoints (OpenAI-compatible)**")
+        st.code(
+            "GET /health\nGET /v1/models\nPOST /v1/chat/completions",
+            language="text",
+        )
+
         st.write("**Invocation method:** `qa_chain({\"query\": ...})`")
         st.write("**Request contract**")
         st.code(json.dumps(request_contract, indent=2), language="json")
