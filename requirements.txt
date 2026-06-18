@@ -1,6 +1,9 @@
 langchain
+langchain-classic
 langchain-openai
 langchain-community
+langchain-ollama
+langchain-text-splitters
 openai
 chromadb
 tiktoken

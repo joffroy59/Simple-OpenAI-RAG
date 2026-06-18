@@ -48,13 +48,43 @@ source venv/bin/activate  # On Windows: venv\\Scripts\\activate
 pip install -r requirements.txt
 ```
 
-### 3. Set your OpenAI API key
+### 3. Configure your provider (`.env`)
 
-Create a `.env` file in the root directory with:
+Create a `.env` file in the root directory. This project supports multiple LLM providers via `LLM_PROVIDER`.
+
+#### Option A: OpenAI
 
 ```
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4o-mini
 OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 ```
+
+#### Option B: Azure OpenAI
+
+Use deployment names from your Azure OpenAI resource:
+
+```
+LLM_PROVIDER=azure
+AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/
+AZURE_OPENAI_API_KEY=your_azure_openai_api_key
+AZURE_OPENAI_API_VERSION=2024-02-01
+AZURE_OPENAI_CHAT_DEPLOYMENT=your_chat_deployment_name
+AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT=your_embeddings_deployment_name
+AZURE_OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+```
+
+#### Option C: Ollama (local)
+
+```
+LLM_PROVIDER=ollama
+LLM_MODEL=llama3.1
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+```
+
+> If you change embedding provider or embedding model, rebuild the FAISS index by running `python create_database.py` again.
 
 > 💡 Don’t forget to add `.env` to your `.gitignore`.
 
