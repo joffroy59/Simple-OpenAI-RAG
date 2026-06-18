@@ -3,7 +3,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_openai import AzureOpenAIEmbeddings
 from langchain_openai import AzureChatOpenAI
-from langchain.chains import RetrievalQA
+from langchain_classic.chains import RetrievalQA
 import os
 from dotenv import load_dotenv
 
