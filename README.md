@@ -155,6 +155,55 @@ Open your browser to `http://localhost:8501` and start querying!
 
 ---
 
+### 🔌 Option 3: OpenAI-Compatible API
+
+Run a local API server exposing OpenAI-style endpoints:
+
+```bash
+uvicorn openai_compatible_api:app --host 0.0.0.0 --port 8000
+```
+
+Available endpoints:
+
+- `GET /health`
+- `GET /v1/models`
+- `POST /v1/chat/completions`
+
+Example with OpenAI Python SDK (using `base_url`):
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+		api_key="dummy-key",
+		base_url="http://localhost:8000/v1",
+)
+
+resp = client.chat.completions.create(
+		model="rag-local",
+		messages=[
+				{"role": "user", "content": "Resume le papier GPT-4 en 5 points."}
+		],
+)
+
+print(resp.choices[0].message.content)
+```
+
+Example with curl:
+
+```bash
+curl http://localhost:8000/v1/chat/completions \
+	-H "Content-Type: application/json" \
+	-d '{
+		"model": "rag-local",
+		"messages": [
+			{"role": "user", "content": "What are the main improvements in GPT-4?"}
+		]
+	}'
+```
+
+---
+
 ## 📦 Project Structure
 
 ```
