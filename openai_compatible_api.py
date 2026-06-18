@@ -1,11 +1,13 @@
 import os
 import time
 import uuid
+import json
 from typing import Any
 from typing import Literal
 
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from pydantic import Field
 
@@ -41,6 +43,113 @@ def _extract_user_query(messages: list[ChatMessage]) -> str:
     raise HTTPException(status_code=400, detail="At least one user message is required.")
 
 
+def _split_text_for_stream(answer: str, chunk_size: int = 40) -> list[str]:
+    if not answer:
+        return []
+
+    chunks = []
+    current = ""
+    for word in answer.split(" "):
+        candidate = word if not current else f"{current} {word}"
+        if len(candidate) <= chunk_size:
+            current = candidate
+        else:
+            if current:
+                chunks.append(current + " ")
+            current = word
+
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _build_completion_response(
+    answer: str,
+    source_files: list[str],
+    model_name: str,
+    completion_id: str,
+    created: int,
+) -> dict[str, Any]:
+    return {
+        "id": completion_id,
+        "object": "chat.completion",
+        "created": created,
+        "model": model_name,
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": answer,
+                },
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+        },
+        "rag_sources": source_files,
+    }
+
+
+def _stream_chat_completion(
+    answer: str,
+    source_files: list[str],
+    model_name: str,
+    completion_id: str,
+    created: int,
+):
+    role_chunk = {
+        "id": completion_id,
+        "object": "chat.completion.chunk",
+        "created": created,
+        "model": model_name,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {"role": "assistant"},
+                "finish_reason": None,
+            }
+        ],
+    }
+    yield f"data: {json.dumps(role_chunk)}\n\n"
+
+    for text_chunk in _split_text_for_stream(answer):
+        content_chunk = {
+            "id": completion_id,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": model_name,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {"content": text_chunk},
+                    "finish_reason": None,
+                }
+            ],
+        }
+        yield f"data: {json.dumps(content_chunk)}\n\n"
+
+    finish_chunk = {
+        "id": completion_id,
+        "object": "chat.completion.chunk",
+        "created": created,
+        "model": model_name,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {},
+                "finish_reason": "stop",
+            }
+        ],
+        "rag_sources": source_files,
+    }
+    yield f"data: {json.dumps(finish_chunk)}\n\n"
+    yield "data: [DONE]\n\n"
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -64,10 +173,7 @@ def list_models() -> dict[str, Any]:
 
 
 @app.post("/v1/chat/completions")
-def chat_completions(payload: ChatCompletionsRequest) -> dict[str, Any]:
-    if payload.stream:
-        raise HTTPException(status_code=400, detail="stream=true is not supported yet.")
-
+def chat_completions(payload: ChatCompletionsRequest):
     query = _extract_user_query(payload.messages)
 
     qa_chain = create_rag_chain()
@@ -85,25 +191,22 @@ def chat_completions(payload: ChatCompletionsRequest) -> dict[str, Any]:
     now = int(time.time())
     completion_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
 
-    return {
-        "id": completion_id,
-        "object": "chat.completion",
-        "created": now,
-        "model": model_name,
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": answer,
-                },
-                "finish_reason": "stop",
-            }
-        ],
-        "usage": {
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "total_tokens": 0,
-        },
-        "rag_sources": source_files,
-    }
+    if payload.stream:
+        return StreamingResponse(
+            _stream_chat_completion(
+                answer=answer,
+                source_files=source_files,
+                model_name=model_name,
+                completion_id=completion_id,
+                created=now,
+            ),
+            media_type="text/event-stream",
+        )
+
+    return _build_completion_response(
+        answer=answer,
+        source_files=source_files,
+        model_name=model_name,
+        completion_id=completion_id,
+        created=now,
+    )

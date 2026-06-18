@@ -167,7 +167,7 @@ Available endpoints:
 
 - `GET /health`
 - `GET /v1/models`
-- `POST /v1/chat/completions`
+- `POST /v1/chat/completions` (supports `stream=true`)
 
 Example with OpenAI Python SDK (using `base_url`):
 
@@ -201,6 +201,26 @@ curl http://localhost:8000/v1/chat/completions \
 		]
 	}'
 ```
+
+Streaming example with curl:
+
+```bash
+curl http://localhost:8000/v1/chat/completions \
+	-H "Content-Type: application/json" \
+	-d '{
+		"model": "rag-local",
+		"stream": true,
+		"messages": [
+			{"role": "user", "content": "Donne la liste complete des capitaines."}
+		]
+	}'
+```
+
+In Streamlit, you can now choose the execution mode:
+
+- `Direct RAG chain`
+- `OpenAI-compatible API (normal)`
+- `OpenAI-compatible API (stream)`
 
 ---
 

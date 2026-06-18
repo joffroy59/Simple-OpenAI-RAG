@@ -3,6 +3,7 @@ from rag_pipeline import create_rag_chain
 from collections import Counter
 import os
 import json
+import requests
 
 
 def _extract_source_files(source_documents):
@@ -71,7 +72,7 @@ def _render_rag_api_panel():
         st.write("**Base URL:**", api_base_url)
         st.write("**FastAPI endpoints (OpenAI-compatible)**")
         st.code(
-            "GET /health\nGET /v1/models\nPOST /v1/chat/completions",
+            "GET /health\nGET /v1/models\nPOST /v1/chat/completions (supports stream=true)",
             language="text",
         )
 
@@ -83,27 +84,123 @@ def _render_rag_api_panel():
         st.write("**Current runtime configuration**")
         st.json(runtime)
 
+
+def _get_fastapi_base_url() -> str:
+    api_host = os.getenv("RAG_API_HOST", "localhost")
+    api_port = os.getenv("RAG_API_PORT", "8000")
+    return f"http://{api_host}:{api_port}"
+
+
+def _query_via_openai_compatible_api(query: str, stream: bool):
+    api_base_url = _get_fastapi_base_url()
+    payload = {
+        "model": os.getenv("LLM_MODEL", "rag-local"),
+        "messages": [{"role": "user", "content": query}],
+        "stream": stream,
+    }
+
+    if not stream:
+        response = requests.post(
+            f"{api_base_url}/v1/chat/completions",
+            json=payload,
+            timeout=120,
+        )
+        response.raise_for_status()
+        data = response.json()
+        answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        sources = data.get("rag_sources", [])
+        return answer, sources
+
+    with requests.post(
+        f"{api_base_url}/v1/chat/completions",
+        json=payload,
+        stream=True,
+        timeout=180,
+    ) as response:
+        response.raise_for_status()
+
+        answer = ""
+        sources = []
+        answer_placeholder = st.empty()
+
+        for raw_line in response.iter_lines(decode_unicode=True):
+            if not raw_line:
+                continue
+            if not raw_line.startswith("data: "):
+                continue
+
+            data = raw_line[6:]
+            if data == "[DONE]":
+                break
+
+            chunk = json.loads(data)
+            choices = chunk.get("choices", [])
+            if choices:
+                delta = choices[0].get("delta", {})
+                content_piece = delta.get("content")
+                if content_piece:
+                    answer += content_piece
+                    answer_placeholder.write("**Answer (stream):** " + answer)
+
+            if "rag_sources" in chunk:
+                sources = chunk["rag_sources"]
+
+        return answer, sources
+
+
+def _render_source_file_summary_from_paths(source_paths: list[str]):
+    if not source_paths:
+        st.caption("No source file metadata found in retrieved documents.")
+        return
+
+    file_counts = Counter(source_paths)
+    top_source_file, top_count = file_counts.most_common(1)[0]
+
+    st.write("**Main source file used by RAG:**", os.path.basename(top_source_file))
+    st.caption(f"Selected in {top_count} retrieved chunk(s)")
+
+    with st.expander("Show retrieved source files"):
+        for file_path, count in file_counts.most_common():
+            st.write(f"- {os.path.basename(file_path)} ({count} chunk(s))")
+
 st.title("Ask me anything about OpenAI Research")
 _render_rag_api_panel()
 query = st.text_input("Ask a question...")
+mode = st.radio(
+    "Execution mode",
+    [
+        "Direct RAG chain",
+        "OpenAI-compatible API (normal)",
+        "OpenAI-compatible API (stream)",
+    ],
+    index=0,
+)
 
 if query:
-    qa_chain = create_rag_chain()
-    response = qa_chain({"query": query})
-    st.write("**Answer:**", response["result"])
+    try:
+        if mode == "Direct RAG chain":
+            qa_chain = create_rag_chain()
+            response = qa_chain({"query": query})
+            st.write("**Answer:**", response["result"])
 
-    source_documents = response.get("source_documents", [])
-    source_files = _extract_source_files(source_documents)
+            source_documents = response.get("source_documents", [])
+            source_files = _extract_source_files(source_documents)
+            _render_source_file_summary_from_paths(source_files)
 
-    if source_files:
-        file_counts = Counter(source_files)
-        top_source_file, top_count = file_counts.most_common(1)[0]
+        elif mode == "OpenAI-compatible API (normal)":
+            answer, source_files = _query_via_openai_compatible_api(query=query, stream=False)
+            st.write("**Answer (API):**", answer)
+            _render_source_file_summary_from_paths(source_files)
 
-        st.write("**Main source file used by RAG:**", os.path.basename(top_source_file))
-        st.caption(f"Selected in {top_count} retrieved chunk(s)")
+        else:
+            answer, source_files = _query_via_openai_compatible_api(query=query, stream=True)
+            if not answer:
+                st.write("**Answer (stream):**")
+            _render_source_file_summary_from_paths(source_files)
 
-        with st.expander("Show retrieved source files"):
-            for file_path, count in file_counts.most_common():
-                st.write(f"- {os.path.basename(file_path)} ({count} chunk(s))")
-    else:
-        st.caption("No source file metadata found in retrieved documents.")
+    except requests.RequestException as exc:
+        st.error(
+            "FastAPI server is not reachable. Start it with: "
+            "uvicorn openai_compatible_api:app --host 0.0.0.0 --port 8000"
+        )
+        st.caption(str(exc))
