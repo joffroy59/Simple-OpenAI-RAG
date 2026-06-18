@@ -31,6 +31,16 @@ def _resolve_embedding_identity():
     return os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 
 
+def _get_int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
 def _render_rag_api_panel():
     provider = os.getenv("LLM_PROVIDER", "openai").lower()
     api_host = os.getenv("RAG_API_HOST", "localhost")
@@ -41,7 +51,9 @@ def _render_rag_api_panel():
         "provider": provider,
         "llm": _resolve_llm_identity(),
         "embedding_model": _resolve_embedding_identity(),
-        "retriever_k": 4,
+        "retriever_search_type": os.getenv("RAG_RETRIEVER_SEARCH_TYPE", "mmr"),
+        "retriever_k": _get_int_env("RAG_RETRIEVER_K", 12),
+        "retriever_fetch_k": _get_int_env("RAG_RETRIEVER_FETCH_K", 40),
         "vector_store": "FAISS",
         "index_path": "faiss_index",
         "fastapi_base_url": api_base_url,

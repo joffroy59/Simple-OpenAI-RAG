@@ -14,6 +14,16 @@ def _get_provider():
     return os.getenv("LLM_PROVIDER", "openai").lower()
 
 
+def _get_int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
 def _build_embeddings():
     provider = _get_provider()
 
@@ -88,7 +98,15 @@ def create_rag_chain():
         allow_dangerous_deserialization=True
     )
 
-    retriever = vectordb.as_retriever(search_kwargs={"k": 4})
+    retriever_k = _get_int_env("RAG_RETRIEVER_K", 12)
+    retriever_fetch_k = _get_int_env("RAG_RETRIEVER_FETCH_K", 40)
+    retriever = vectordb.as_retriever(
+        search_type=os.getenv("RAG_RETRIEVER_SEARCH_TYPE", "mmr"),
+        search_kwargs={
+            "k": retriever_k,
+            "fetch_k": retriever_fetch_k,
+        },
+    )
     llm = _build_llm()
 
     qa_chain = RetrievalQA.from_chain_type(

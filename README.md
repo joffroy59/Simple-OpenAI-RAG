@@ -98,6 +98,18 @@ You can provide multiple languages if needed:
 UNSTRUCTURED_LANGUAGES=fra,eng
 ```
 
+#### Retrieval Completeness (important for full lists)
+
+If answers are missing entries in list-style questions, increase retrieval coverage:
+
+```
+RAG_RETRIEVER_SEARCH_TYPE=mmr
+RAG_RETRIEVER_K=12
+RAG_RETRIEVER_FETCH_K=40
+```
+
+You can increase `RAG_RETRIEVER_K` (for example to `16` or `20`) for more exhaustive answers.
+
 > If you change embedding provider or embedding model, rebuild the FAISS index by running `python create_database.py` again.
 
 > 💡 Don’t forget to add `.env` to your `.gitignore`.
