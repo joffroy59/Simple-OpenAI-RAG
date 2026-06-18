@@ -10,6 +10,11 @@ load_dotenv(override=True)
 DATA_FOLDER = "data"
 
 
+def _get_unstructured_languages():
+    raw_languages = os.getenv("UNSTRUCTURED_LANGUAGES", "fra")
+    return [lang.strip() for lang in raw_languages.split(",") if lang.strip()]
+
+
 def _build_embeddings():
     provider = os.getenv("LLM_PROVIDER", "openai").lower()
 
@@ -43,7 +48,10 @@ def _build_embeddings():
     )
 
 def load_and_split(pdf_path):
-    loader = UnstructuredPDFLoader(pdf_path)
+    loader = UnstructuredPDFLoader(
+        pdf_path,
+        languages=_get_unstructured_languages(),
+    )
     documents = loader.load()
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,

@@ -84,6 +84,20 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 ```
 
+#### PDF Parsing Language (Unstructured)
+
+To avoid the warning `No languages specified, defaulting to English.`, set:
+
+```
+UNSTRUCTURED_LANGUAGES=fra
+```
+
+You can provide multiple languages if needed:
+
+```
+UNSTRUCTURED_LANGUAGES=fra,eng
+```
+
 > If you change embedding provider or embedding model, rebuild the FAISS index by running `python create_database.py` again.
 
 > 💡 Don’t forget to add `.env` to your `.gitignore`.
